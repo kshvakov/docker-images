@@ -1,3 +1,4 @@
 env/*
 worker/tmp/*
+notifier/tmp/*
 app-server/tmp/*

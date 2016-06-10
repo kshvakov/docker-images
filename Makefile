@@ -70,6 +70,27 @@ build-app-server:
 
 	@echo "\033[1mBuild app-server: done!\033[0m"
 
+build-notifier:
+
+	@echo "\033[1mBuild Postgres-CI notifier\033[0m"
+
+	@GOROOT=$(shell pwd)/env/go \
+	GOPATH=$(shell pwd)/env/gopath \
+	env/go/bin/go get -d -u github.com/postgres-ci/notifier
+
+	@cd env/gopath/src/github.com/postgres-ci/notifier && \
+		$(shell pwd)/env/gopath/bin/gvt restore
+
+	@[ -d notifier/tmp/ ] || mkdir notifier/tmp/
+
+	@GOROOT=$(shell pwd)/env/go \
+	GOPATH=$(shell pwd)/env/gopath \
+	CGO_ENABLED=0 \
+	env/go/bin/go build -ldflags='-s -w' -o notifier/tmp/notifier \
+		env/gopath/src/github.com/postgres-ci/notifier/worker.go 
+
+	@echo "\033[1mBuild notifier: done!\033[0m"
+
 build-worker-image: build-worker
 
 	@echo "\033[1mBuild worker docker image\033[0m"
@@ -86,6 +107,14 @@ build-app-server-image: build-app-server
 
 	@echo "\033[1mBuild app-server docker image: done!\033[0m"
 
-build: build-worker build-app-server
+build-notifier-image: build-notifier
 
-all: go build-worker-image build-app-server-image
+	@echo "\033[1mBuild notifier docker image\033[0m"
+
+	@cd notifier && docker build -t postgresci/notifier .
+
+	@echo "\033[1mBuild notifier docker image: done!\033[0m"
+
+build: build-worker build-app-server build-notifier
+
+all: go build-worker-image build-app-server-image build-notifier-image
